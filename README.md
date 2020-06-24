@@ -140,3 +140,73 @@ except for the problem of too many levels of indirection".
         If we allocate the order line again to the same batch, the batch should still have an available quantity of 8.
     Batches have an ETA if they are currently shipping, or they may be in warehouse stock. We allocate to warehouse stock in preference to shipment batches. We allocate to shipment batches in order of which has the earliest ETA.
 
++ UML DIAGRAM OF Batch and OrderLine models -> model.py
+
+![](./static/UML_DIAGRAM.png)
+
+    MORE TYPES FOR MORE TYPE HINTS
+    If you really want to go to town with type hints, you could go so far as wrapping primitive types by using typing.NewType:
+    Just taking it way too far, Bob
+
+        from dataclasses import dataclass from typing import NewType
+
+        Quantity = NewType("Quantity", int)
+        Sku = NewType("Sku", str)
+        Reference = NewType("Reference", str)
+        ...
+        class Batch:
+        def __init__(self, ref: Reference, sku: Sku, qty: Quantity):
+                self.sku = sku
+                self.reference = ref
+                self._purchased_quantity = qty
+
+    That would allow our type checker to make sure that we don’t pass a Sku where a Reference is expected, for example.
+    Whether you think this is wonderful or appalling is a matter of debate
+
+    Dataclasses Are Great for Value Objects
+    We’ve used line liberally in the previous code listings, but what is a line? In our business language, an order has multiple line items,
+    where each line has a SKU and a quantity. We can imagine that a simple YAML file containing order information might look like this:
+
+    Order_reference: 12345
+    Lines:
+        - sku: RED-CHAIR
+          qty: 25
+        - sku: BLU-CHAIR
+          qty: 25
+        - sku: GRN-CHAIR
+          qty: 25
+
+    Notice that while an order has a reference that uniquely identifies it, a line does not. (Even if we add the order reference to the OrderLine class, it’s not something that uniquely identifies the line itself.)
+    Whenever we have a business concept that has data but no identity, we often choose to represent it using the Value Object pattern. A value object is any domain object that is uniquely identified by the data it holds;
+    we usually make them immutable:
+
+    OrderLine is a value object
+
+    @dataclass(frozen=True)
+    class OrderLine:
+        orderid: OrderReference
+        sku: ProductReference
+        qty: Quantity
+
+    In fact, it’s common to support operations on values; for example, mathematical operators:
+    Math with value objects
+
+    fiver = Money('gbp', 5)
+    tenner = Money('gbp', 10)
+
+    def can_add_money_values_for_the_same_currency():
+        assert fiver + fiver == tenner
+
+    def can_subtract_money_values():
+        assert tenner - fiver == fiver
+
+    def adding_different_currencies_fails():
+        with pytest.raises(ValueError):
+            Money('usd', 10) + Money('gbp', 10)
+
+    def can_multiply_money_by_a_number():
+        assert fiver * 5 == Money('gbp', 25)
+
+    def multiplying_two_money_values_is_an_error():
+        with pytest.raises(TypeError):
+            tenner * fiver
