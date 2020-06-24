@@ -210,3 +210,25 @@ except for the problem of too many levels of indirection".
     def multiplying_two_money_values_is_an_error():
         with pytest.raises(TypeError):
             tenner * fiver
+
+    Value Objects and Entities
+
+    An order line is uniquely identified by its order ID, SKU, and quantity; if we change one of those values, we now have a new line.
+    That’s the definition of a value object: any object that is identified only by its data and doesn’t have a long-lived identity.
+    What about a batch, though? That is identified by a reference.
+
+    For value objects, the hash should be based on all the value attributes, and we should ensure that the objects are immutable. We get this
+    for free by specifying @frozen=True on the dataclass.
+
+    For entities, the simplest option is to say that the hash is None, meaning that the object is not hashable and cannot, for example, be
+    used in a set. If for some reason you decide you really do want to use set or dict operations with entities, the hash should be based on the
+    attribute(s), such as .reference, that defines the entity’s unique identity over time. You should also try to somehow make that attribute read-only.
+
+    :WARNING: !!
+    This is tricky territory; you shouldn’t modify __hash__ without also modifying __eq__. If you’re not sure what you’re doing,
+
++ our final model diagram using DDD :
+
+![](./static/domain_service.png)
+
+
