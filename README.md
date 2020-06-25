@@ -362,3 +362,56 @@ Table 2-1. Repository pattern and persistence ignorance: the trade-offs
 ![](./static/cost_of_changes.png)
 
 
+    + chapter 3 - Coupling and Abstractions :
+
+    When we’re unable to change component A for fear of breaking component B, we say that the components have become coupled. Locally, coupling is a good thing: it’s a sign that our
+    code is working together, each component supporting the others, all of them fitting in place like the gears of a watch. In jargon, we say this works when there is high cohesion
+    between the coupled elements.
+
+    Globally, coupling is a nuisance: it increases the risk and the cost of changing our code, sometimes to the point where we feel unable to make any changes at all. This is the problem
+    with the Ball of Mud pattern: as the application grows, if we’re unable to prevent coupling between elements that have no cohesion, that coupling increases superlinearly until we are no
+    longer able to effectively change our systems.
+
+
+- We can reduce the degree of coupling within a system (Figure 3-1) by abstracting away the details (Figure 3-2)..
+
+![](./static/reduce_coupling.png)
+
+In Figure 3-2, though, we have reduced the degree of coupling by inserting a new, simpler abstraction. Because it is simpler, system A has fewer kinds of dependencies on the abstraction.
+The abstraction serves to protect us from change by hiding away the complex details of whatever system B does—we can change the arrows on the right without changing the ones on the left.
+
+    Abstracting State Aids Testability
+    Let’s see an example. Imagine we want to write code for synchronizing two file directories, which we’ll call the source and the destination:
+    If a file exists in the source but not in the destination, copy the file over.
+    If a file exists in the source, but it has a different name than in the destination, rename the destination file to match.
+    If a file exists in the destination but not in the source, remove it.
+
+    Our first and third requirements are simple enough: we can just compare two lists of paths. Our second is trickier, though. To detect renames, we’ll have to inspect the content of files.
+    For this, we can use a hashing function like MD5 or SHA-1. The code to generate a SHA-1 hash from a file is simple enough:
+
+    - programming approach :
+
+    When we have to tackle a problem from first principles, we usually try to write a simple implementation and then refactor toward better design. We’ll use this approach throughout the book,
+    because it’s how we write code in the real world: start with a solution to the smallest part of the problem, and then iteratively make the solution richer and better designed.
+
+    + why not using mock.patch() :
+
+    We have three closely related reasons for our preference:
+    Patching out the dependency you’re using makes it possible to unit test the code, but it does nothing to improve the design. Using mock.patch won’t let your code work with a --dry-run flag,
+    nor will it help you run against an FTP server. For that, you’ll need to introduce abstractions.
+    Tests that use mocks tend to be more coupled to the implementation details of the codebase. That’s because mock tests verify the interactions between things: did we call shutil.copy with the right arguments?
+    This coupling between code and test tends to make tests more brittle, in our experience.
+    Overuse of mocks leads to complicated test suites that fail to explain the code.
+
+    !! NOTE -> Designing for testability really means designing for extensibility. We trade off a little more complexity for a cleaner design that admits novel use cases.
+
+    MOCKS VERSUS FAKES; CLASSIC-STYLE VERSUS LONDON- SCHOOL TDD
+    Here’s a short and somewhat simplistic definition of the difference between mocks and fakes: Mocks are used to verify how something gets used; they have methods like
+    assert_called_once_with(). They’re associated with London-school TDD.
+
+    Fakes are working implementations of the thing they’re replacing, but they’re designed for use only in tests. They wouldn’t work “in real life”; our in-memory repository is a good example.
+    But you can use them to make assertions about the end state of a system rather than the behaviors along the way, so they’re associated with classic-style TDD.
+
+    + chapter 4 - Flask API and Service Layer :
+
+
