@@ -324,3 +324,24 @@ except for the problem of too many levels of indirection".
     + Repository Pattern :
 
     The Repository pattern is an abstraction over persistent storage. It hides the boring details of data access by pretending that all of our data is in memory.
+
+    Abstract class for orm models to make ops like add, get :
+
+        class AbstractRepository(abc.ABC):
+            @abc.abstractmethod
+            def add(self, batch: model.Batch):
+                raise NotImplementedError
+
+            @abc.abstractmethod
+            def get(self, reference) -> model.Batch:
+                raise NotImplementedError
+
+    - The Repository pattern is probably one of the easiest choices in the book, though, if you’re already heading down the DDD and dependency inversion route. As far as our code is concerned,
+      we’re really just swapping the SQLAlchemy abstraction (session.query(Batch)) for a different one (batches_repo.get) that we designed.
+
+![](./static/repository_pattern_schema.png)
+
+    As always, we start with a test. This would probably be classified as an integration test, since we’re checking that our code (the repository) is correctly integrated with the database; hence,
+    the tests tend to mix raw SQL with calls and assertions on our own code.
+
+
