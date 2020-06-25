@@ -3,8 +3,12 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List, Set
 
+"""
+IMPORTANT !! : please when if you want to interact with sqlalchemy specialy running test_orm.py
+change decorator `@dataclass(frozen=True)` to `@dataclass(unsafe_hash=True)`
+"""
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class OrderLine:
     orderid: str
     sku: str

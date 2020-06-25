@@ -227,8 +227,98 @@ except for the problem of too many levels of indirection".
     :WARNING: !!
     This is tricky territory; you shouldn’t modify __hash__ without also modifying __eq__. If you’re not sure what you’re doing,
 
+    + run all tests :
+
+    $ pytest --tb=short
+
 + our final model diagram using DDD :
 
 ![](./static/domain_service.png)
+
+    + Chapter 2. Repository Pattern
+
+    It’s time to make good on our promise to use the dependency inversion principle as a way of decoupling our core logic from infrastructural concerns.
+    We’ll introduce the Repository pattern, a simplifying abstraction over data storage, allowing us to decouple our model layer from the data layer.
+
+    Figure 2-1 shows a little preview of what we’re going to build: a Repository object that sits between our domain model and the database.
+
+![](./static/repository_pattern.png)
+
+    Applying the DIP (Depandency Inversion principle) to Data Access :
+
+    an allocation is the concept of linking an OrderLine to a Batch. We’re storing the allocations as a collection on our Batch object.
+
+    The most important thing an ORM gives us is persistence ignorance: the idea that our fancy domain model doesn’t need to know anything
+    about how data is loaded or persisted. This helps keep our domain clean of direct dependencies on particular database technologies.3
+    But if you follow the typical SQLAlchemy tutorial, you’ll end up with something like this:
+    SQLAlchemy “declarative” syntax, model depends on ORM (orm.py)
+
+        from sqlalchemy import Column, ForeignKey, Integer, String from sqlalchemy.ext.declarative import declarative_base from sqlalchemy.orm import relationship
+        Base = declarative_base()
+
+        class Order(Base):
+            id = Column(Integer, primary_key=True)
+
+        class OrderLine(Base):
+        id = Column(Integer, primary_key=True)
+        sku = Column(String(250))
+        qty = Integer(String(250))
+        order_id = Column(Integer, ForeignKey('order.id')) order = relationship(Order)
+        class Allocation(Base): ...
+
+    You don’t need to understand SQLAlchemy to see that our pristine model is now full of dependencies on the ORM and is starting
+    to look ugly as hell besides. Can we really say this model is ignorant of the database? How can it be separate from storage concerns
+    when our model properties are directly coupled to database columns?
+
+    - Dependency Inversion is one of the last principles we are going to look at. The principle states that:
+
+    High-level modules should not depend on low-level modules. Both should depend on abstractions.
+    Abstractions should not depend on details. Details should depend on abstractions.
+
+    ++ Apply dependency inversion and the Repository pattern
+
+    Inverting the Dependency: ORM Depends on Model :
+
+    Well, thankfully, that’s not the only way to use SQLAlchemy. The alternative is to define your schema separately,
+    and to define an explicit mapper for how to convert between the schema and our domain model, what SQLAlchemy calls a classical mapping:
+
+    Testing Fixture :
+
+    What is a fixture?
+    A fixture is a function, which is automatically called by Pytest when the name of the argument (argument of the test function or of the another fixture)
+    matches the fixture name. In another words:
+
+    @pytest.fixture
+    def fixture1():
+       return "foo"
+
+    def test_foo(fixture1):
+        assert fixture1 == "foo"
+
+    Fixtures as Function arguments
+    Test functions can receive fixture objects by naming them as an input argument. For each argument name, a fixture function with that name provides the fixture object.
+    Fixture functions are registered by marking them with @pytest.fixture. Let’s look at a simple self-contained test module containing a fixture and a test function using it:
+
+    1- Example :
+
+        # content of ./test_smtpsimple.py
+        import pytest
+
+
+        @pytest.fixture
+        def smtp_connection():
+            import smtplib
+
+            return smtplib.SMTP("smtp.gmail.com", 587, timeout=5)
+
+
+        def test_ehlo(smtp_connection):
+            response, msg = smtp_connection.ehlo()
+            assert response == 250
+            assert 0  # for demo purposes
+
+    + conftest.py: sharing fixture functions
+    If during implementing your tests you realize that you want to use a fixture function from multiple test files you can move it to a `conftest.py` file. You don’t need to import the fixture you want
+    to use in a test, it automatically gets discovered by pytest. The discovery of fixture functions starts at test classes, then test modules, then conftest.py files and finally builtin and third party plugins.
 
 
