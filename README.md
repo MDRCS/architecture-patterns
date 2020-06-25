@@ -344,4 +344,21 @@ except for the problem of too many levels of indirection".
     As always, we start with a test. This would probably be classified as an integration test, since we’re checking that our code (the repository) is correctly integrated with the database; hence,
     the tests tend to mix raw SQL with calls and assertions on our own code.
 
+    What Is a Port and What Is an Adapter, in Python?
+    ABC class is the port and SqlAlchemyRepository is the implementation of this abstract class == adpater :
+    Now Python doesn’t have interfaces per se, so although it’s usually easy to identify an adapter, defining the port can be harder. If you’re using an abstract base class, that’s the port. If not, the port is just the duck type that your adapters conform to and that your core application expects—the function and method names in use, and their argument names and types.
+
+    NOTE !! : We want to be clear that we’re not saying every single application needs to be built this way; only sometimes does the complexity of the app and domain make it worth investing the time and effort in adding these extra layers of indirection.
+
+Pros and Cons of using Repository Pattern :
+Table 2-1. Repository pattern and persistence ignorance: the trade-offs
+
+![](./static/tradoffs_repo_pattern.png)
+
+    TIP
+    If your app is just a simple CRUD (create-read-update-delete) wrapper around a database, then you don’t need a domain model or a repository.
+    But the more complex the domain, the more an investment in freeing yourself from infrastructure concerns will pay off in terms of the ease of making changes.
+
+![](./static/cost_of_changes.png)
+
 
