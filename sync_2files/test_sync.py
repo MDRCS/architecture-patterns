@@ -1,21 +1,7 @@
 import tempfile
 from pathlib import Path
 import shutil
-from sync import sync, determine_actions
-
-
-"""
-class FakeFileSystem(list):
-
-    def copy(self, src, dest):
-        self.append(('COPY', src, dest))
-
-    def move(self, src, dest):
-        self.append(('MOVE', src, dest))
-
-    def delete(self, dest):
-        self.append(('DELETE', dest))
-"""
+from sync_2files.sync import sync, determine_actions
 
 
 class TestE2E:

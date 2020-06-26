@@ -412,6 +412,16 @@ The abstraction serves to protect us from change by hiding away the complex deta
     Fakes are working implementations of the thing they’re replacing, but they’re designed for use only in tests. They wouldn’t work “in real life”; our in-memory repository is a good example.
     But you can use them to make assertions about the end state of a system rather than the behaviors along the way, so they’re associated with classic-style TDD.
 
-    + chapter 4 - Flask API and Service Layer :
+    - mocks essay -> https://martinfowler.com/articles/mocksArentStubs.html
+    - TDD Explained -> http://www.peterprovost.org/blog/2012/05/02/kata-the-only-way-to-learn-tdd/
+
++ chapter 4 - Flask API and Service Layer :
+![](./static/upgraded_schema.png)
+
+- Figure 4-2 shows what we’re aiming for: we’re going to add a Flask API that will talk to the service layer, which will serve as the entrypoint to our domain model.
+  Because our service layer depends on the AbstractRepository, we can unit test it by using FakeRepository but run our production code using SqlAlchemyRepository.
+
+![](./static/add_service_layer_api.png)
+
 
 

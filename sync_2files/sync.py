@@ -8,20 +8,15 @@ def sync(source, dest):
     # imperative shell step 1, gather inputs
     source_hashes = read_paths_and_hashes(source)
     dest_hashes = read_paths_and_hashes(dest)
-    print(source, dest)
     # step 2: call functional core
     actions = determine_actions(source_hashes, dest_hashes, source, dest)
     # imperative shell step 3, apply outputs
     for action, *paths in actions:
-        print(action, *paths)
         if action == 'copy':
-            print("heey")
             shutil.copyfile(*paths)
         if action == 'move':
-            print("lol")
             shutil.move(*paths)
         if action == 'delete':
-            print("nana")
             os.remove(paths[0])
 
 
@@ -61,7 +56,3 @@ def determine_actions(src_hashes, dst_hashes, src_folder, dst_folder):
     for sha, filename in dst_hashes.items():
         if sha not in src_hashes:
             yield 'delete', dst_folder / filename
-
-
-if __name__ == "__main__":
-    sync("source.txt","destination.txt")
