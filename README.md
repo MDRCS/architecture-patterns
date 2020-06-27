@@ -502,3 +502,26 @@ Table 4-1. Service layer: the trade-offs
 
     Maintain a small core of tests written against your domain model
     These tests have highly focused coverage and are more brittle, but they have the highest feedback. Don’t be afraid to delete these tests if the functionality is later covered by tests at the service layer.
+
+    + Chapter 6. Unit of Work Pattern :
+
+    If the Repository pattern is our abstraction over the idea of persistent storage, the Unit of Work (UoW) pattern is our abstraction over the idea of atomic operations. It will allow us to finally and fully decouple our service layer from the data layer.
+
++ Figure 6-2 shows our target state. The Flask API now does only two things: it initializes a unit of work, and it invokes a service. The service collaborates with the UoW (we like to think of the UoW as being part of the service layer), but neither the service function itself nor Flask now needs to talk directly to the database.
+![](./static/Introduce_UoW.png)
+
+
+    + The Unit of Work Collaborates with the Repository
+    UoW will act as a context manager.
+    uow.batches is the batches repo, so the UoW provides us access to our permanent storage.
+    When we’re done, we commit or roll back our work, using the UoW.
+
+
+    The UoW acts as a single entrypoint to our persistent storage, and it keeps track of what objects were loaded and of the latest state
+    + This gives us three useful things:
+
+    1- A stable snapshot of the database to work with, so the objects we use aren’t changing halfway through an operation
+    2- A way to persist all of our changes at once, so if something goes wrong, we don’t end up in an inconsistent state
+    3- A simple API to our persistence concerns and a handy place to get a repository
+
+    STAND BY ... This book is really Hard !
