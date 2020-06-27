@@ -496,3 +496,9 @@ Table 4-1. Service layer: the trade-offs
 + TIP -> Every line of code that we put in a test is like a blob of glue, holding the system in a particular shape. The more low-level tests we have, the harder it will be to change things.
 
 ![](./static/trade-offs.png)
+
+    High and Low Gear
+    Most of the time, when we are adding a new feature or fixing a bug, we don’t need to make extensive changes to the domain model. In these cases, we prefer to write tests against services because of the lower coupling and higher coverage.
+
+    Maintain a small core of tests written against your domain model
+    These tests have highly focused coverage and are more brittle, but they have the highest feedback. Don’t be afraid to delete these tests if the functionality is later covered by tests at the service layer.

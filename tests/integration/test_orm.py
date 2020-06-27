@@ -1,12 +1,12 @@
 import pytest
 
-import model
+import domain.model as model
 from datetime import date
 
 
 def test_orderline_mapper_can_load_lines(session):
     session.execute(
-        'INSERT INTO order_lines (orderid, sku, qty) VALUES '
+        'INSERT INTO orders_lines (orderid, sku, qty) VALUES '
         '("order1", "RED-CHAIR", 12),'
         '("order1", "RED-TABLE", 13),'
         '("order2", "BLUE-LIPSTICK", 14)'

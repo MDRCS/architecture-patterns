@@ -1,7 +1,7 @@
 import pytest
-import model
-import repository
-import services
+import domain.model as model
+import adapters.repository as repository
+import service_layer.services as services
 
 
 class FakeRepository(repository.AbstractRepository):

@@ -1,5 +1,5 @@
 # pylint: disable=protected-access
-import model
+import domain.model as model
 import repository
 
 
