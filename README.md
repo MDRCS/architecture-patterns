@@ -650,3 +650,37 @@ of abstracting away the SQLAlchemy session if it already implements the pattern 
     to
       read1, write1, read2, write2(succeed)
 
+![](./static/aggregate_pattern_tradeoffs.png)
+
+    AGGREGATES AND CONSISTENCY BOUNDARIES RECAP
+
+    - Aggregates are your entrypoints into the domain model
+    By restricting the number of ways that things can be changed, we make the system easier to reason about.
+
+    - Aggregates are in charge of a consistency boundary
+    An aggregate’s job is to be able to manage our business rules about invariants as they apply to a group of related objects. It’s the aggregate’s
+    job to check that the objects within its remit are consistent with each other and with our rules, and to reject changes that would break the rules.
+
+    - Aggregates and concurrency issues go together
+    When thinking about implementing these consistency checks, we end up thinking about transactions and locks. Choosing the right aggregate is about performance
+    as well as conceptual organization of your domain.
+
+![](./static/new_diagram.png)
+
+    + Resume :
+
+    So that’s where we are at the end of Part I. What have we achieved? We’ve seen how to build a domain model that’s exercised by a set of high-level unit tests.
+    Our tests are living documentation: they describe the behavior of our system—the rules upon which we agreed with our business stakeholders—in nice readable code.
+    When our business requirements change, we have confidence that our tests will help us to prove the new functionality, and when new developers join the project,
+    they can read our tests to understand how things work.
+    We’ve decoupled the infrastructural parts of our system, like the database and API handlers, so that we can plug them into the outside of our application. This
+    helps us to keep our codebase well organized and stops us from building a big ball of mud.
+    By applying the dependency inversion principle, and by using ports- and-adapters-inspired patterns like Repository and Unit of Work, we’ve made it possible to do
+    TDD in both high gear and low gear and to maintain a healthy test pyramid. We can test our system edge to edge, and the need for integration and end-to-end tests is kept to a minimum.
+    Lastly, we’ve talked about the idea of consistency boundaries. We don’t want to lock our entire system whenever we make a change, so we have to choose which parts are consistent with one another.
+    For a small system, this is everything you need to go and play with the ideas of domain-driven design. You now have the tools to build
+    database-agnostic domain models that represent the shared language of your business experts. Hurrah!
+
+    ++ NOTE -> At the risk of laboring the point—we’ve been at pains to point out that each pattern comes at a cost. Each layer of indirection has a price in terms of complexity and duplication in our code and will be confusing to programmers who’ve never seen these patterns before. If your app is essentially a simple CRUD wrapper around a database and isn’t likely to be anything more than that in the foreseeable future, you don’t need these patterns. Go ahead and use Django, and save yourself a lot of bother.
+
+
