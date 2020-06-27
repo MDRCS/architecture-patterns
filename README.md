@@ -524,4 +524,28 @@ Table 4-1. Service layer: the trade-offs
     2- A way to persist all of our changes at once, so if something goes wrong, we don’t end up in an inconsistent state
     3- A simple API to our persistence concerns and a handy place to get a repository
 
-    STAND BY ... This book is really Hard !
+    Deleting tests :
+    You should always feel free to throw away tests if you think they’re not going to add value longer term. We’d say that test_orm.py was primarily a tool to help us learn SQLAlchemy, so we won’t
+    need that long term, especially if the main things it’s doing are covered in test_repository.py. That last test, you might keep around,
+    but we could certainly see an argument for just keeping everything at the highest possible level of abstraction (just as we did for the unit tests).
+
+Every time you load a new entity from the database, the session begins to track changes to the entity, and when the session is flushed, all your changes are persisted together. Why do we go to the effort
+of abstracting away the SQLAlchemy session if it already implements the pattern we want?
+
+![](./static/UoW-pattern-tradeoffs.png)
+
+    + UNIT OF WORK PATTERN RECAP :
+
+    - The Unit of Work pattern is an abstraction around data integrity
+    It helps to enforce the consistency of our domain model, and improves performance, by letting us perform a single flush operation at the end of an operation.
+
+    - It works closely with the Repository and Service Layer patterns
+    The Unit of Work pattern completes our abstractions over data access by representing atomic updates. Each of our service-layer use cases runs in a single unit of work that succeeds or fails as a block.
+
+    - This is a lovely case for a context manager
+    Context managers are an idiomatic way of defining scope in Python. We can use a context manager to automatically roll back our work at the end of a request, which means the system is safe by default.
+
+    - SQLAlchemy already implements this pattern
+    We introduce an even simpler abstraction over the SQLAlchemy Session object in order to “narrow” the interface between the ORM and our code. This helps to keep us loosely coupled.
+
+
