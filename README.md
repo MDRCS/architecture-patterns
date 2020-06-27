@@ -477,3 +477,22 @@ The abstraction serves to protect us from change by hiding away the complex deta
         │   └── test_repository.py
         └── e2e
             └── test_api.py
+
+Table 4-1. Service layer: the trade-offs
+
+![](./static/service_layer_pattern.png)
+
+    - How Is Our Test Pyramid Looking?
+    -> Not bad! We have 15 unit tests, 8 integration tests, and just 2 end-to- end tests. That’s already a healthy-looking test pyramid.
+
++ Should Domain Layer Tests Move to the Service Layer?
+
+    - Raison :
+
+    Tests are supposed to help us change our system fearlessly, but often we see teams writing too many tests against their domain model. This causes problems when they come to change their codebase and find that they need to update tens or even hundreds of unit tests.
+    As we get further into the book, you’ll see how the service layer forms an API for our system that we can drive in multiple ways. Testing against this API reduces the amount of code that we need to change when we refactor our domain model.
+    If we restrict ourselves to testing only against the service layer, we won’t have any tests that directly interact with “private” methods or attributes on our model objects, which leaves us freer to refactor them.
+
++ TIP -> Every line of code that we put in a test is like a blob of glue, holding the system in a particular shape. The more low-level tests we have, the harder it will be to change things.
+
+![](./static/trade-offs.png)
