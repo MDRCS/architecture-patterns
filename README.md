@@ -548,4 +548,105 @@ of abstracting away the SQLAlchemy session if it already implements the pattern 
     - SQLAlchemy already implements this pattern
     We introduce an even simpler abstraction over the SQLAlchemy Session object in order to “narrow” the interface between the ORM and our code. This helps to keep us loosely coupled.
 
++ Chapter 7 - Aggregates and Consistency Boundaries
+
+    - Figure 7-1 shows a preview of where we’re headed: we’ll introduce a new model object called Product to wrap multiple batches, and we’ll make the old allocate() domain service available as a method on Product instead.
+
+![](./static/product_class_aggregator.png)
+
+    Invariants, Concurrency, and Locks
+    Let’s look at another one of our business rules:
+    We can’t allocate to a batch if the available quantity is less than the quantity of the order line. — The business
+
+    Here the constraint is that we can’t allocate more stock than is available to a batch, so we never oversell stock by allocating two customers to the same physical cushion,
+    for example. Every time we update the state of the system, our code needs to ensure that we don’t break the invariant, which is that the available quantity must be greater
+    than or equal to zero.
+
+    In a single-threaded, single-user application, it’s relatively easy for us to maintain this invariant. We can just allocate stock one line at a time, and raise an error if there’s no stock available.
+    This gets much harder when we introduce the idea of concurrency. Suddenly we might be allocating stock for multiple order lines simultaneously. We might even be allocating order lines at the same time as processing changes to the batches themselves.
+    We usually solve this problem by applying locks to our database tables. This prevents two operations from happening simultaneously on the same row or same table.
+
+    As we start to think about scaling up our app, we realize that our model of allocating lines against all available batches may not scale. If we process tens of thousands of orders per hour, and hundreds of thousands of order lines, we can’t hold a lock
+    over the whole batches table for every single one—we’ll get deadlocks or performance problems at the very least.
+
+    What Is an Aggregate?
+
+    OK, so if we can’t lock the whole database every time we want to allocate an order line, what should we do instead? We want to protect the invariants of our system but allow for the greatest degree of concurrency. Maintaining our invariants inevitably
+    means preventing concurrent writes; if multiple users can allocate DEADLY-SPOON at the same time, we run the risk of overallocating.
+    On the other hand, there’s no reason we can’t allocate DEADLY- SPOON at the same time as FLIMSY-DESK. It’s safe to allocate two
+    products at the same time because there’s no invariant that covers them both. We don’t need them to be consistent with each other.
+
+    The Aggregate pattern is a design pattern from the DDD community that helps us to resolve this tension. An aggregate is just a domain object that contains other domain objects and lets us treat the whole collection as a single unit.
+    The only way to modify the objects inside the aggregate is to load the whole thing, and to call methods on the aggregate itself.
+
+    For example, if we’re building a shopping site, the Cart might make a good aggregate: it’s a collection of items that we can treat as a single unit. Importantly, we want to load the entire basket as a single blob from our data store. We don’t want two requests
+    to modify the basket at the same time, or we run the risk of weird concurrency errors. Instead, we want each change to the basket to run in a single database transaction.
+
+    An AGGREGATE is a cluster of associated objects that we treat as a unit for the purpose of data changes.
+    —Eric Evans, Domain-Driven Design blue book
+
+![](./static/domain_model_old.png)
+
+- we’ll move to the world of Figure 7-3, in which there is a new Product object for the particular SKU of our order line, and it will be in charge of all the batches for that SKU, and we can call a .allocate() method on that instead.
+
+![](./static/domain_model_new_aggregate_pattern.png)
+
+    Let’s see how that looks in code form:
+    Our chosen aggregate, Product (src/allocation/domain/model.py)
+
+        class Product:
+        def __init__(self, sku: str, batches: List[Batch]): self.sku = sku
+                self.batches = batches
+        def allocate(self, line: OrderLine) -> str: try:
+        batch = next(
+        b for b in sorted(self.batches) if
+        b.can_allocate(line)
+                    )
+                    batch.allocate(line)
+        return batch.reference except StopIteration:
+              {line.sku}')
+        raise OutOfStock(f'Out of stock for sku
+
+    Product’s main identifier is the sku.
+    Our Product class holds a reference to a collection of
+    batches for that SKU.
+    Finally, we can move the allocate() domain service to be a method on the Product aggregate.
+
+    We don’t want to hold a lock over the entire batches table, but how will we implement holding a lock over just the rows for a particular SKU?
+    One answer is to have a single attribute on the Product model that acts as a marker for the whole state change being complete and to use it as the single resource that concurrent
+    workers can fight over. If two transactions read the state of the world for batches at the same time, and both want to update the allocations tables, we force both to also try to
+    update the version_number in the products table, in such a way that only one of them can win and the world stays consistent.
+
+    + TIP : Version numbers are just one way to implement optimistic locking. You could achieve the same thing by setting the Postgres transaction isolation level to SERIALIZABLE, but that often comes at a severe performance cost. Version numbers also make implicit concepts explicit.
+
+![](./static/concurrent_update.png)
+
+    OPTIMISTIC CONCURRENCY CONTROL AND RETRIES
+    What we’ve implemented here is called optimistic concurrency control because our default assumption is that everything will be fine when two users want to make changes to the database. We think it’s unlikely that they will conflict with each other,
+    so we let them go ahead and just make sure we have a way to notice if there is a problem.
+    Pessimistic concurrency control works under the assumption that two users are going to cause conflicts, and we want to prevent conflicts in all cases, so we lock everything just to be safe. In our example, that would mean locking the whole batches table,
+    or using SELECT FOR UPDATE—we’re pretending that we’ve ruled those out for performance reasons, but in real life you’d want to do some evaluations and measurements of your own.
+    With pessimistic locking, you don’t need to think about handling failures because the database will prevent them for you (although you do need to think about deadlocks). With optimistic locking, you need to explicitly handle the possibility of
+    failures in the (hopefully unlikely) case of a clash.
+    The usual way to handle a failure is to retry the failed operation from the beginning. Imagine we have two customers, Harry and Bob, and each submits an order for SHINY-TABLE. Both threads load the product at version 1 and allocate stock.
+    The database prevents the concurrent update, and Bob’s order fails with an error. When we retry the operation, Bob’s order loads the product at version 2 and tries to allocate again. If there is enough stock left, all is well; otherwise,
+    he’ll receive OutOfStock. Most operations can be retried this way in the case of a concurrency problem.
+
+
+    Pessimistic Concurrency Control Example: SELECT FOR UPDATE
+    There are multiple ways to approach this, but we’ll show one. SELECT FOR UPDATE produces different behavior; two concurrent transactions will not be allowed to do a read on the same rows at the same time:
+    SELECT FOR UPDATE is a way of picking a row or rows to use as a lock (although those rows don’t have to be the ones you update). If two transactions both try to SELECT FOR UPDATE a row at the same time, one will win, and the other will wait until the lock is released.
+    So this is an example of pessimistic concurrency control.
+
+    Here’s how you can use the SQLAlchemy DSL to specify FOR UPDATE at query time:
+    SQLAlchemy with_for_update (src/allocation/adapters/repository.py)
+    def get(self, sku):
+    return self.session.query(model.Product) \
+                           .filter_by(sku=sku) \
+                           .with_for_update() \
+                           .first()
+    This will have the effect of changing the concurrency pattern from
+      read1, read2, write1, write2(fail)
+    to
+      read1, write1, read2, write2(succeed)
 
