@@ -424,4 +424,22 @@ The abstraction serves to protect us from change by hiding away the complex deta
 ![](./static/add_service_layer_api.png)
 
 
+    $ docker container stop $(docker container ls -aq)
+    $ docker container rm $(docker container ls -aq)
 
+
+    !!  DEPEND ON ABSTRACTIONS !!
+    Notice one more thing about our service-layer function:
+
+    `def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:`
+
+    It depends on a repository. We’ve chosen to make the dependency explicit, and we’ve used the type hint to say that we depend on AbstractRepository.
+    This means it’ll work both when the tests give it a FakeRepository and when the Flask app gives it a SqlAlchemyRepository.
+
+    If you remember “The Dependency Inversion Principle”, this is what we mean when we say we should “depend on abstractions.” Our high-level module,
+    the service layer, depends on the repository abstraction. And the details of the implementation for our specific choice of persistent storage also
+    depend on that same abstraction. See Figures 4-3 and 4-4.
+
+
+    If you would like to see print statements as they are executed, you can pass the -s flag to py.test. However, note that this can sometimes be difficult to parse.
+    >>> pytest test_api.py -s

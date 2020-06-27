@@ -56,6 +56,14 @@ def postgres_db():
     return engine
 
 
+@pytest.fixture(scope='session')
+def sqlite_db():
+    engine = create_engine('sqlite:///allocations.db')
+    wait_for_postgres_to_come_up(engine)
+    metadata.create_all(engine)
+    return engine
+
+
 @pytest.fixture
 def postgres_session(postgres_db):
     start_mappers()
@@ -64,7 +72,18 @@ def postgres_session(postgres_db):
 
 
 @pytest.fixture
+def sqlite_session(sqlite_db):
+    start_mappers()
+    yield sessionmaker(bind=sqlite_db)()
+    clear_mappers()
+
+
+@pytest.fixture
 def add_stock(postgres_session):
+    """ change postgres_session to sqlite_session if you want to use sqlite in all the function ! don't forget to
+        import sqlite3
+    """
+
     batches_added = set()
     skus_added = set()
 
@@ -105,5 +124,5 @@ def add_stock(postgres_session):
 @pytest.fixture
 def restart_api():
     (Path(__file__).parent / 'flask_app.py').touch()
-    time.sleep(0.5)
+    time.sleep(1)
     wait_for_webapp_to_come_up()
