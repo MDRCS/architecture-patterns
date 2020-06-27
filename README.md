@@ -443,3 +443,37 @@ The abstraction serves to protect us from change by hiding away the complex deta
 
     If you would like to see print statements as they are executed, you can pass the -s flag to py.test. However, note that this can sometimes be difficult to parse.
     >>> pytest test_api.py -s
+
+    We’ve successfully split our tests into two broad categories: tests about web stuff, which we implement end to end; and tests about orchestration stuff, which we can test against the service layer in memory.
+
+    Putting Things in Folders to See Where It All Belongs
+    As our application gets bigger, we’ll need to keep tidying our directory structure.
+
+    Some subfolders
+    .
+    ├── config.py
+    ├── domain
+    │   ├── __init__.py
+    │   └── model.py
+    ├── service_layer
+    │   ├── __init__.py
+    │   └── services.py
+    ├── adapters
+    │   ├── __init__.py
+    │   ├── orm.py
+    │   └── repository.py
+    ├── entrypoints
+    │   ├── __init__.py
+    │   └── flask_app.py
+    └── tests
+        ├── __init__.py
+        ├── conftest.py
+        ├── unit
+        │   ├── test_allocate.py
+        │   ├── test_batches.py
+        │   └── test_services.py
+        ├── integration
+        │   ├── test_orm.py
+        │   └── test_repository.py
+        └── e2e
+            └── test_api.py
