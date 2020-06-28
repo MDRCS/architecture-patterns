@@ -759,3 +759,6 @@ of abstracting away the SQLAlchemy session if it already implements the pattern 
 
     Option 3: UoW collects events from aggregates and passes them to message bus
     Adding bus.handle(aggregate.events) to every handler is annoying, so we can tidy up by making our unit of work responsible for raising events that were raised by loaded objects. This is the most complex design and might rely on ORM magic, but it’s clean and easy to use once it’s set up.
+
+    Chapter 9. Going to Town on the Message Bus
+    page 255 to be continued
