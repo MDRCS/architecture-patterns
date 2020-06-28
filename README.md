@@ -683,4 +683,79 @@ of abstracting away the SQLAlchemy session if it already implements the pattern 
 
     ++ NOTE -> At the risk of laboring the point—we’ve been at pains to point out that each pattern comes at a cost. Each layer of indirection has a price in terms of complexity and duplication in our code and will be confusing to programmers who’ve never seen these patterns before. If your app is essentially a simple CRUD wrapper around a database and isn’t likely to be anything more than that in the foreseeable future, you don’t need these patterns. Go ahead and use Django, and save yourself a lot of bother.
 
+    - postgresdb REPEATABLE READ :
+    https://sqlperformance.com/2014/04/t-sql-queries/the-repeatable-read-isolation-level
+    https://www.postgresql.org/docs/12/transaction-iso.html
 
++ Part II. Event-Driven Architecture
+
+    - We’ll zoom out to look at how we can compose a system from many small components that interact through asynchronous message passing.
+    - We’ll see how our Service Layer and Unit of Work patterns allow us to reconfigure our app to run as an asynchronous message processor, and how event-driven systems help us to decouple aggregates and applications from one another.
+
+![](./static/workflow.png)
+
+    We’ll look at the following patterns and techniques:
+
+    Domain Events
+    Trigger workflows that cross consistency boundaries.
+
+    Message Bus
+    Provide a unified way of invoking use cases from any endpoint.
+
+    CQRS
+    Separating reads and writes avoids awkward compromises in an event-driven architecture and enables performance and scalability improvements.
+    Plus, we’ll add a dependency injection framework. This has nothing to do with event-driven architecture per se, but it tidies up an awful lot of loose ends.
+
+    + Chapter 8 - Events and the Message Bus
+
+    Our example will be a typical notification requirement: when we can’t allocate an order because we’re out of stock, we should alert the buying team. They’ll go and fix the problem by buying more stock, and all will be well.
+    For a first version, our product owner says we can just send the alert by email.
+    Then we’ll show how to use the Domain Events pattern to separate side effects from our use cases, and how to use a simple Message Bus pattern for triggering behavior based on those events. We’ll show a few options for creating
+    those events and how to pass them to the message bus, and finally we’ll show how the Unit of Work pattern can be modified to connect the two together elegantly, as previewed in Figure 8-1.
+
+![](./static/event-driven-architecture.png)
+
+    Single Responsibility Principle
+    Really, this is a violation of the single responsibility principle (SRP).1 Our use case is allocation. Our endpoint, service function, and domain methods are all called allocate, not allocate_and_send_mail_if_out_of_stock.
+
+    TIP -> Rule of thumb: if you can’t describe what your function does without using words like “then” or “and,” you might be violating the SRP.
+    One formulation of the SRP is that each class should have only a single reason to change. When we switch from email to SMS, we shouldn’t have to update our allocate() function, because that’s clearly a separate responsibility.
+    We’d also like to keep the service layer free of implementation details. We want to apply the dependency inversion principle to notifications so that our service layer depends on an abstraction, in the same way as we avoid depending on the database by using a unit of work.
+
+    Events Are Simple Dataclasses
+    An event is a kind of value object. Events don’t have any behavior, because they’re pure data structures. We always name events in the language of the domain, and we think of them as part of our domain model.
+
+    Simple message bus (src/allocation/service_layer/messagebus.py)
+        def handle(event: events.Event):
+        for handler in HANDLERS[type(event)]:
+                handler(event)
+        def send_out_of_stock_notification(event: events.OutOfStock): email.send_mail(
+                'stock@made.com',
+                f'Out of stock for {event.sku}',
+            )
+        HANDLERS = {
+            events.OutOfStock: [send_out_of_stock_notification],
+        } # type: Dict[Type[events.Event], List[Callable]]
+
+    Wrap-Up
+    Domain events give us a way to handle workflows in our system. We often find, listening to our domain experts, that they express requirements in a causal or temporal way—for example, “When we try to allocate stock but there’s none available, then we should send an email to the buying team.”
+    The magic words “When X, then Y” often tell us about an event that we can make concrete in our system. Treating events as first-class things in our model helps us make our code more testable and observable, and it helps isolate concerns.
+
+![](./static/domain-events-tradeoffs.png)
+
+    DOMAIN EVENTS AND THE MESSAGE BUS RECAP
+
+    - Events can help with the single responsibility principle
+    Code gets tangled up when we mix multiple concerns in one place. Events can help us to keep things tidy by separating primary use cases from secondary ones. We also use events for communicating between aggregates so that we don’t need to run long-running transactions that lock against multiple tables.
+
+    - A message bus routes messages to handlers
+    You can think of a message bus as a dict that maps from events to their consumers. It doesn’t “know” anything about the meaning of events; it’s just a piece of dumb infrastructure for getting messages around the system.
+
+    Option 1: Service layer raises events and passes them to message bus
+    The simplest way to start using events in your system is to raise them from handlers by calling bus.handle(some_new_event) after you commit your unit of work.
+
+    Option 2: Domain model raises events, service layer passes them to message bus
+    The logic about when to raise an event really should live with the model, so we can improve our system’s design and testability by raising events from the domain model. It’s easy for our handlers to collect events off the model objects after commit and pass them to the bus.
+
+    Option 3: UoW collects events from aggregates and passes them to message bus
+    Adding bus.handle(aggregate.events) to every handler is annoying, so we can tidy up by making our unit of work responsible for raising events that were raised by loaded objects. This is the most complex design and might rely on ORM magic, but it’s clean and easy to use once it’s set up.
