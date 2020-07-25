@@ -63,6 +63,7 @@ def start_mappers():
         'batches': relationship(batches_mapper)
     })
 
+
 @event.listens_for(model.Product, 'load')
 def receive_load(product, _):
     product.events = []

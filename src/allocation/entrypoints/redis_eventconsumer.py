@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 r = redis.Redis(**config.get_redis_host_and_port())
 
 
-
 def main():
     logger.info('Redis pubsub starting')
     bus = bootstrap.bootstrap()
