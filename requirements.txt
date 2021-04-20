@@ -14,7 +14,7 @@ packaging==20.4
 pathlib==1.0.1
 pluggy==0.13.1
 psycopg2==2.8.5
-py==1.8.2
+py==1.10.0
 pyparsing==2.4.7
 pytest==5.4.3
 requests==2.24.0
